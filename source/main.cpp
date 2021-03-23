@@ -17,7 +17,7 @@ std::string formatApplicationId(u64 ApplicationId)
 
 int writeTitlesToFile()
 {
-    NsApplicationRecord *record = new NsApplicationRecord[MaxTitleCount]();
+    NsApplicationRecord *records = new NsApplicationRecord[MaxTitleCount]();
     uint64_t tid;
     NsApplicationControlData controlData;
     NacpLanguageEntry* langEntry = NULL;
@@ -31,10 +31,10 @@ int writeTitlesToFile()
     if(file.is_open())
     {
         file << "Title ID|Title Name\n";
-        rc = nsListApplicationRecord(record, MaxTitleCount, 0, &recordCount);
+        rc = nsListApplicationRecord(records, MaxTitleCount, 0, &recordCount);
         for (s32 i = 0; i < recordCount; i++)
         {
-            tid = record[i].application_id;
+            tid = records[i].application_id;
             rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, &controlData, sizeof(controlData), &controlSize);
             if(R_FAILED(rc)) break;
             rc = nacpGetLanguageEntry(&controlData.nacp, &langEntry);
@@ -46,6 +46,7 @@ int writeTitlesToFile()
             file << formatApplicationId(tid) + "|" + langEntry->name + "\n";
         }
         file.close();
+        delete[] records;
         return 1;
     }
     return 0;
