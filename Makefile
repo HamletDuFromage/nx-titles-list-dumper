@@ -44,7 +44,7 @@ DATA		:=	data
 INCLUDES	:=	include
 APP_TITLE	:=	NX Titles List Dumper
 APP_AUTHOR	:=	HamletDuFromage
-APP_VERSION :=  1.0.1
+APP_VERSION :=  1.0.2
 #ROMFS	:=	romfs
 
 #---------------------------------------------------------------------------------

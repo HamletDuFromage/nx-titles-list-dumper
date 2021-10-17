@@ -4,8 +4,9 @@
 #include <sstream>
 #include <fstream>
 #include <iomanip>
+#include <string.h>
 
-constexpr const char out_path[]= "/titles.csv";
+constexpr const char out_path[] = "/titles.csv";
 constexpr u32 MaxTitleCount = 64000;
 
 std::string formatApplicationId(u64 ApplicationId)
@@ -17,31 +18,41 @@ std::string formatApplicationId(u64 ApplicationId)
 
 int writeTitlesToFile()
 {
-    NsApplicationRecord *records = new NsApplicationRecord[MaxTitleCount]();
-    uint64_t tid;
-    NsApplicationControlData controlData;
-    NacpLanguageEntry* langEntry = NULL;
-
-    Result rc;
-    int recordCount     = 0;
-    size_t controlSize  = 0;
-
     std::ofstream file(out_path);
-
-    if(file.is_open())
+    if (file.is_open())
     {
+        NsApplicationRecord *records = new NsApplicationRecord[MaxTitleCount]();
+        uint64_t tid;
+        NsApplicationControlData *controlData = NULL;
+        NacpLanguageEntry *langEntry = NULL;
+
+        Result rc;
+        int recordCount = 0;
+        u64 controlSize = 0;
+
         file << "Title ID|Title Name\n";
         rc = nsListApplicationRecord(records, MaxTitleCount, 0, &recordCount);
         for (s32 i = 0; i < recordCount; i++)
         {
+            controlSize = 0;
+            controlData = (NsApplicationControlData *)malloc(sizeof(NsApplicationControlData));
+
+            if (controlData != NULL)
+                memset(controlData, 0, sizeof(NsApplicationControlData));
+            else
+                break;
+
             tid = records[i].application_id;
-            rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, &controlData, sizeof(controlData), &controlSize);
-            if(R_FAILED(rc)) break;
-            rc = nacpGetLanguageEntry(&controlData.nacp, &langEntry);
-            if(R_FAILED(rc)) break;
-            
-            if(!langEntry->name)
-                continue;
+            rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, controlData, sizeof(controlData), &controlSize);
+            if (R_FAILED(rc))
+                break;
+
+            rc = nacpGetLanguageEntry(&controlData->nacp, &langEntry);
+            if (R_FAILED(rc))
+                break;
+
+            if (!langEntry->name)
+                break;
 
             file << formatApplicationId(tid) + "|" + langEntry->name + "\n";
         }
@@ -52,7 +63,7 @@ int writeTitlesToFile()
     return 0;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     consoleInit(NULL);
     nsInitialize();
@@ -73,15 +84,15 @@ int main(int argc, char* argv[])
         consoleClear();
 
         printf("\033[31mTitles list dumper\033[0m\n\n");
-        if(res == -1)
+        if (res == -1)
             printf("Press [A] to dump a list of titles to `%s`\n", out_path);
-        if(res == 1)
+        if (res == 1)
             printf("Done\n");
-        if(res == 0)
+        if (res == 0)
             printf("Failed\n");
         printf("Press [+] to exit\n");
 
-        if (kDown & HidNpadButton_A) 
+        if (kDown & HidNpadButton_A)
         {
             printf("Dumping...\n");
             consoleUpdate(NULL);
