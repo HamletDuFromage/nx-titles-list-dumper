@@ -21,38 +21,43 @@ int writeTitlesToFile()
     std::ofstream file(out_path);
     if (file.is_open())
     {
-        NsApplicationRecord *records = new NsApplicationRecord[MaxTitleCount]();
-        uint64_t tid;
+        NsApplicationRecord *records = new NsApplicationRecord[MaxTitleCount];
         NsApplicationControlData *controlData = NULL;
         NacpLanguageEntry *langEntry = NULL;
+        s32 recordCount = 0;
+        u64 controlSize = 0;
+        uint64_t tid;
 
         Result rc;
-        int recordCount = 0;
-        u64 controlSize = 0;
 
         file << "Title ID|Title Name\n";
         rc = nsListApplicationRecord(records, MaxTitleCount, 0, &recordCount);
         for (s32 i = 0; i < recordCount; i++)
         {
             controlSize = 0;
+            free(controlData);
             controlData = (NsApplicationControlData *)malloc(sizeof(NsApplicationControlData));
 
-            if (controlData != NULL)
-                memset(controlData, 0, sizeof(NsApplicationControlData));
+            if (controlData == NULL)
+                continue;
             else
-                break;
+                memset(controlData, 0, sizeof(NsApplicationControlData));
 
             tid = records[i].application_id;
-            rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, controlData, sizeof(controlData), &controlSize);
+
+            rc = nsGetApplicationControlData(NsApplicationControlSource_Storage, tid, controlData, sizeof(NsApplicationControlData), &controlSize);
             if (R_FAILED(rc))
-                break;
+                continue;
+
+            if (controlSize < sizeof(controlData->nacp))
+                continue;
 
             rc = nacpGetLanguageEntry(&controlData->nacp, &langEntry);
             if (R_FAILED(rc))
-                break;
+                continue;
 
             if (!langEntry->name)
-                break;
+                continue;
 
             file << formatApplicationId(tid) + "|" + langEntry->name + "\n";
         }
